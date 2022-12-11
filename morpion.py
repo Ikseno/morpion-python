@@ -230,3 +230,4 @@ def tour_ia(niveau_ia, grille):
         return
 dif = 0 # Niveau de difficulté
 partie(dif)
+
