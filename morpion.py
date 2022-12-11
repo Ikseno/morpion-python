@@ -140,6 +140,7 @@ def partie(niveau_ia):
                         afficher_grille(grille,surf, img_o,img_x)
                         if grille.victoire(nb_coups%2+1): # Ecran de victoire de l'humain si dif = 1 ou 2 / Ecran de victoire d'un des deux joueurs si dif = 0
                             surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
+                            pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
                             while run:
                                 for event in pygame.event.get():
                                     if event.type==pygame.QUIT:
@@ -153,6 +154,7 @@ def partie(niveau_ia):
                                 surf.blit(image_texte2, (390,400))
                                 surf.blit(image_texte3, (210,500))
                                 pygame.display.flip()
+                                
                                 if replay_button.draw(surf): # Si click sur bouton replay 
                                     surf.fill((255,255,255))
                                     partie(dif) # Relance une partie
@@ -164,6 +166,7 @@ def partie(niveau_ia):
                 afficher_grille(grille,surf, img_o,img_x)
                 if grille.victoire(nb_coups%2+1): # Ecran de victoire de l'IA (quasiment le même que celui d'au dessus donc répétitif et pas très optimisé)
                     surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
+                    pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
                     while run:
                         for event in pygame.event.get():
                             if event.type==pygame.QUIT:
@@ -184,6 +187,7 @@ def partie(niveau_ia):
         if nb_coups-coup_debut>=9:  # Ecran de fin si aucun gagnant
             afficher_grille(grille,surf, img_o,img_x)
             surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
+            pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
             while run:
                 for event in pygame.event.get():
                     if event.type==pygame.QUIT:
@@ -224,5 +228,5 @@ def tour_ia(niveau_ia, grille):
             else:
                 tour_ia(1,grille)
         return
-dif = 2 # Niveau de difficulté
+dif = 0 # Niveau de difficulté
 partie(dif)
