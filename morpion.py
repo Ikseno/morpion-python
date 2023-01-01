@@ -2,14 +2,25 @@ import pygame
 from blur import blurSurf
 from random import randint
 from PIL import Image, ImageFilter
+from time import sleep
 import button 
 
 # Initialisation de pygame
 pygame.init()
-surf = pygame.display.set_mode((900,900))
+surf = pygame.display.set_mode((750,750))
 surf.fill((255,255,255))
 clock = pygame.time.Clock()
+
+# définition de la police
 police = pygame.font.SysFont("monospace" ,100)
+police2 = pygame.font.SysFont("monospace" ,30)
+police3 = pygame.font.SysFont("monospace" , 50)
+
+
+my_text = police2.render ("joueur", 1 , (0))
+text_width = my_text.get_width()
+text_height = my_text.get_height()
+print(text_height, text_width)
 
 class Grille:
     """Grille 3x3 de morpion sous forme de liste de liste basée sur un système de coordonnée comme ceci :
@@ -36,97 +47,94 @@ Dans les cases, les 0 représentent des cases vides, les 1 représentent des X e
             self.grille[x][y]=valeur
             return True
         return False
+    
+    def ligne_gagnante(self,joueur,numero_ligne):
+        """Vérifie si la ligne 'numero_ligne' est gagnante pour le joueur 'joueur' et renvoie True si oui (non sinon)"""
+        return self.grille[numero_ligne]==[joueur,joueur,joueur]
+
+    def colonne_gagnante(self,joueur,numero_colonne):
+        """Vérifie si la colonne 'numero_colonne' est gagnante pour le joueur 'joueur' et renvoie True si oui (non sinon)"""
+        return [self.grille[j][numero_colonne] for j in range(3)]==[joueur,joueur,joueur]
+
+    def diagonale_bas_droite_gagnante(self, joueur):
+        """Vérifie si la diagonale \ est gagnante pour le joueur 'joueur' et renvoie True si oui (non sinon)"""
+        return [self.grille[j][j] for j in range(3)]==[joueur,joueur,joueur]
+
+    def diagonale_haut_droite_gagnante(self, joueur):
+        """Vérifie si la diagonale / est gagnante pour le joueur 'joueur' et renvoie True si oui (non sinon)"""
+        return [self.grille[2-j][j] for j in range(3)]==[joueur,joueur,joueur]
+        
+    def victoire(self,joueur,x,y,surf):
+        """Vérifie si le joueur 'joueur' a gagné à partir de ce qu'il vient de jouer (coordonnées x, y).
+        Si oui trace une ligne rouge sur la bande gagnante et renvoie un booléen."""
+        
+        # Bandes horizontales
+        if self.ligne_gagnante(joueur,x):
+            pygame.draw.line(surf, (250, 70, 70), (10, 125*(x+1) + 125*x), (740, 125*(x+1) + 125*x), 10)
+            return True
+            
+        # Bandes verticales  
+        if self.colonne_gagnante(joueur,y):
+            pygame.draw.line(surf, (250, 70, 70), (125*(y+1) + 125*y, 10), (125*(y+1) + 125*y, 740), 10)
+            return True
+
+        # Bande diagonale en partant de la gauche
+        if self.diagonale_bas_droite_gagnante(joueur):
+            pygame.draw.line(surf, (250, 70, 70), (10, 10), (740, 740), width=10)
+            return True
+        
+        # Bande diagonale en partant de la droite
+        if self.diagonale_haut_droite_gagnante(joueur):
+            pygame.draw.line(surf, (250, 70, 70), (740, 10), (10, 740), width=10)
+            return True
+
+        return False
+    
     def peut_gagner(self,joueur):
         """Vérifie si un joueur peut gagner. Le joueur est représenté par un 1 ou un 2.
         Renvoie les coordonnées de la case à choisir pour gagner (ou pour contrer une victoire)"""
 
-        # Détecter les bandes verticales
         for x in range(3):
-            for deux_y in [0,1],[0,2],[1,2]:
-                if self.get_case(x,deux_y[0])==joueur and self.get_case(x,deux_y[1])==joueur:
-                    y_solution=[0,1,2]
-                    y_solution.remove(deux_y[0])
-                    y_solution.remove(deux_y[1])
-                    if self.get_case(x,y_solution[0])==0:
-                        return (x,y_solution[0])
+            for y in range(3):
+                if self.get_case(x,y)==0:
+                    copie_self=Grille()
+                    for a in range(3):
+                        for b in range(3):
+                            copie_self.set_case(a,b,self.get_case(a,b))
+                    if copie_self.set_case(x,y,joueur):
+                        if (copie_self.ligne_gagnante(joueur,x) or
+                            copie_self.colonne_gagnante(joueur,y) or
+                            copie_self.diagonale_bas_droite_gagnante(joueur) or
+                            copie_self.diagonale_haut_droite_gagnante(joueur)):
 
-        # Détecter les bandes horizontales
-        for y in range(3):
-            for deux_x in [0,1],[0,2],[1,2]:
-                if self.get_case(deux_x[0],y)==joueur and self.get_case(deux_x[1],y)==joueur:
-                    x_solution=[0,1,2]
-                    x_solution.remove(deux_x[0])
-                    x_solution.remove(deux_x[1])
-                    if self.get_case(x_solution[0],y)==0:
-                        return (x_solution[0],y)
-        
-        # Détecter les bandes diagonales
-        liste_case1=[]
-        liste_case2=[]
-        for i in range(3):
-            liste_case1.append(self.get_case(i,i))
-            liste_case2.append(self.get_case(i,2-i))
-            
-        if liste_case1==[joueur,joueur,0]:
-            return(2,2)
-        if liste_case1==[joueur,0,joueur]:
-            return(1,1)
-        if liste_case1==[0,joueur,joueur]:
-            return(0,0)
-        if liste_case2==[joueur,joueur,0]:
-            return(2,0)
-        if liste_case2==[joueur,0,joueur]:
-            return(1,1)
-        if liste_case2==[0,joueur,joueur]:
-            return(0,2)
+                            return (x,y)
         return (None,None)
-
-    def victoire(self,joueur):
-        """Vérifie si un des joueur a gagné. Si oui trace une ligne rouge sur la bande gagnante et renvoie un booléen."""
-        # Bandes horizontales
-        for i in range(3):
-            if self.grille[i]==[joueur,joueur,joueur]:
-                pygame.draw.line(surf, (250, 70, 70), (10, 150*(i+1) + 150*i), (890, 150*(i+1) + 150*i), 10)
-                return True
-        # Bandes verticales
-        liste_bande_verticale = [[self.grille[0][a],self.grille[1][a],self.grille[2][a]] for a in range(3)]
-        for i in range(3):  
-            if liste_bande_verticale[i] == [joueur,joueur, joueur]:
-                pygame.draw.line(surf, (250, 70, 70), (150*(i+1) + 150*i, 10), (150*(i+1) + 150*i, 890), 10)
-                return True
-
-        # Bande diagonale en partant de la gauche
-        if [self.grille[0][0],self.grille[1][1],self.grille[2][2]] == [joueur,joueur, joueur]:
-            pygame.draw.line(surf, (250, 70, 70), (10, 10), (890, 890), 10)
-            return True
-        # Bande diagonale en partant de la droite
-        if [self.grille[0][2],self.grille[1][1],self.grille[2][0]] == [joueur,joueur, joueur]:
-            pygame.draw.line(surf, (250, 70, 70), (890, 10), (10, 890), 10)
-            return True
-        return False
+                        
                 
 def afficher_grille(grille,surf,img_o,img_x): 
-    for posY in range(300,901,300):
-        pygame.draw.line(surf,(0,0,0),(0,posY),(900,posY),2)
-    for posX in range(300,901,300):
-        pygame.draw.line(surf,(0,0,0),(posX,0),(posX,900),2)
+    for posY in range(250,751,250):
+        pygame.draw.line(surf,(0,0,0),(0,posY),(750,posY),2)
+    for posX in range(250,751,250):
+        pygame.draw.line(surf,(0,0,0),(posX,0),(posX,750),2)
     for x in range(3):
         for y in range(3):
             case=grille.get_case(x,y)
             if case==1:
-                surf.blit(img_o,(300*y+10,300*x+10))
+                surf.blit(img_o,(250*y+10,250*x+10))
             elif case==2:
-                surf.blit(img_x,(300*y+10,300*x+10))
+                surf.blit(img_x,(250*y+10,250*x+10))
     pygame.display.flip()
 
-def partie(niveau_ia):
-    img_o=pygame.transform.scale(pygame.image.load("o.png"),(280,280))
-    img_x=pygame.transform.scale(pygame.image.load("x.png"),(280,280))
+def partie(dif):
+    pygame.display.set_caption("Partie") 
+    img_o=pygame.transform.scale(pygame.image.load("./images/o.png"),(230,230))
+    img_x=pygame.transform.scale(pygame.image.load("./images/x.png"),(230,230))
     run=True
-    coup_debut=randint(0,1)
-    nb_coups=coup_debut
+    joueur_debut=randint(0,1)
+    nb_coups=0
     grille=Grille()
     while run:
+        afficher_grille(grille,surf, img_o,img_x)
         clock.tick(30) # 30 fps
         for event in pygame.event.get():
             if event.type==pygame.QUIT:
@@ -134,90 +142,37 @@ def partie(niveau_ia):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed() == (1,0,0):
                     pos = pygame.mouse.get_pos()
-                    y=pos[0]//300
-                    x=pos[1]//300
-                    if grille.set_case(x,y,nb_coups%2+1):
+                    y=pos[0]//250
+                    x=pos[1]//250
+                    if grille.set_case(x,y,(nb_coups+joueur_debut)%2+1):
                         afficher_grille(grille,surf, img_o,img_x)
-                        if grille.victoire(nb_coups%2+1): # Ecran de victoire de l'humain si dif = 1 ou 2 / Ecran de victoire d'un des deux joueurs si dif = 0
-                            surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
-                            pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
-                            while run:
-                                for event in pygame.event.get():
-                                    if event.type==pygame.QUIT:
-                                        run=False
-                                replay_img = pygame.image.load('replay.png').convert_alpha()
-                                replay_button = button.Button(300, 200, replay_img, 0.2)
-                                image_texte1 = police.render ("Victoire", 1 , (255,0,0))
-                                image_texte2 = police.render ("du", 1 , (255,0,0))
-                                image_texte3 = police.render ("joueur %s"%(str(nb_coups%2+1),), 1 , (255,0,0))
-                                surf.blit(image_texte1, (210,300))  
-                                surf.blit(image_texte2, (390,400))
-                                surf.blit(image_texte3, (210,500))
-                                pygame.display.flip()
-                                
-                                if replay_button.draw(surf): # Si click sur bouton replay 
-                                    surf.fill((255,255,255))
-                                    partie(dif) # Relance une partie
+                        if grille.victoire((nb_coups+joueur_debut)%2+1,x,y,surf): # Ecran de victoire de l'humain si dif = 1 ou 2 / Ecran de victoire d'un des deux joueurs si dif = 0
+                            pygame.display.flip()
+                            sleep(0.4)
+                            run=message_victoire("joueur %s"%(str((nb_coups+joueur_debut)%2+1),),grille,dif,surf,img_o,img_x)
+
                         nb_coups+=1
-            
-        if niveau_ia>=1 and nb_coups%2==0 and nb_coups-coup_debut<9:
-            tour_ia(niveau_ia, grille)
-            if grille.victoire(1):
-                afficher_grille(grille,surf, img_o,img_x)
-                if grille.victoire(nb_coups%2+1): # Ecran de victoire de l'IA (quasiment le même que celui d'au dessus donc répétitif et pas très optimisé)
-                    surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
-                    pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
-                    while run:
-                        for event in pygame.event.get():
-                            if event.type==pygame.QUIT:
-                                run=False
-                        replay_img = pygame.image.load('replay.png').convert_alpha()
-                        replay_button = button.Button(300, 200, replay_img, 0.2)
-                        image_texte1 = police.render ("Victoire", 1 , (255,0,0))
-                        image_texte2 = police.render ("du", 1 , (255,0,0))
-                        image_texte3 = police.render ("robot", 1, (255,0,0))
-                        surf.blit(image_texte1, (210,300))
-                        surf.blit(image_texte2, (390,400))
-                        surf.blit(image_texte3, (300,500))
-                        pygame.display.flip()
-                        if replay_button.draw(surf):  # Si click sur bouton replay
-                            surf.fill((255,255,255))
-                            partie(dif) # Relance une partie
-            nb_coups+=1
-        if nb_coups-coup_debut>=9:  # Ecran de fin si aucun gagnant
-            afficher_grille(grille,surf, img_o,img_x)
-            surf.blit(blurSurf(surf,5),(0,0)) # Remplace la surface actuelle par une surface floutée
-            pygame.time.wait(100) # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
-            while run:
-                for event in pygame.event.get():
-                    if event.type==pygame.QUIT:
-                        run=False
-                replay_img = pygame.image.load('replay.png').convert_alpha()
-                replay_button = button.Button(300, 200, replay_img, 0.2)
-                image_texte1 = police.render ("Aucun", 1 , (255,0,0))
-                image_texte2 = police.render ("gagnant", 1 , (255,0,0))
-                surf.blit(image_texte1, (300,300))
-                surf.blit(image_texte2, (240,400))
-                pygame.display.flip()
-                if replay_button.draw(surf):  # Si click sur bouton replay
-                    surf.fill((255,255,255))
-                    partie(dif) # Relance une partie
-
-
-        afficher_grille(grille,surf, img_o,img_x)
         
-
+        if run and dif>=1 and nb_coups%2==joueur_debut and nb_coups<9:
+            coord=tour_ia(dif, grille, nb_coups)
+            afficher_grille(grille,surf, img_o,img_x)
+            if grille.victoire(1,coord[0],coord[1],surf):
+                run = message_victoire("Robot",grille,dif,surf,img_o,img_x)
+                    
+            nb_coups+=1
+        if run and nb_coups>=9:  # Ecran de fin si aucun gagnant
+            run = message_victoire("Personne",grille,dif,surf,img_o,img_x)
     pygame.quit()
 
-def tour_ia(niveau_ia, grille):
-    if niveau_ia==1:
+def tour_ia(dif, grille, tour):
+    if dif==1:
         while True:
             x=randint(0,2)
             y=randint(0,2)
             if grille.get_case(x,y)==0:
                 grille.set_case(x,y,1)
-                return
-    if niveau_ia==2:
+                return (x,y)
+    if dif==2:
         x,y=grille.peut_gagner(1)
         if x!=None:
             grille.set_case(x,y,1)
@@ -226,8 +181,268 @@ def tour_ia(niveau_ia, grille):
             if x!=None:
                 grille.set_case(x,y,1)
             else:
-                tour_ia(1,grille)
-        return
-dif = 0 # Niveau de difficulté
-partie(dif)
+                return tour_ia(1,grille,tour)
+        return (x,y)
+    
+    if dif==3:
+        x,y=grille.peut_gagner(1)
+        if x!=None:
+            grille.set_case(x,y,1)
+        else:
+            x,y=grille.peut_gagner(2)
+            if x!=None:
+                grille.set_case(x,y,1)
+            else:
+                return tour_ia_3(grille, tour)
+        return (x,y)
 
+def tour_ia_3(grille, tour):
+    if tour==0:
+        grille.set_case(0,0,1)
+        return (0,0)
+    elif tour==2:
+        if grille.get_case(1,1)==2:
+            grille.set_case(2,2,1)
+            return (2,2)
+        elif grille.get_case(2,0)==0 and grille.get_case(1,0)==0:
+            grille.set_case(2,0,1)
+            return (2,0)
+        else:
+            grille.set_case(0,2,1)
+            return (0,2)
+    elif tour==4:
+        if grille.get_case(2,0)==1:
+            if grille.get_case(0,1)==2 or grille.get_case(0,2)==2:
+                grille.set_case(2,2,1)
+                return (2,2)
+            else:
+                grille.set_case(0,2,1)
+                return (0,2)
+        else:
+            if grille.get_case(1,0)==2 or grille.get_case(2,0)==2:
+                grille.set_case(2,2,1)
+                return (2,2)
+            else:
+                grille.set_case(2,0,1)
+                return (2,0)
+    elif tour==1:
+        if grille.get_case(0,0)==2 or grille.get_case(2,0)==2 or grille.get_case(0,2)==2 or grille.get_case(2,2)==2:
+            grille.set_case(1,1,1)
+            return(1,1)
+        else:
+            grille.set_case(0,0,1)
+            return(0,0)
+    return tour_ia(1,grille,tour)
+            
+
+def message_victoire(gagnant,grille,dif,surf,img_o,img_x):
+    sleep(.2)  # Pour éviter d'appuyer sur le bouton sans s'en rendre compte
+    rect = pygame.Rect(130,0,490,750)
+    sub = surf.subsurface(rect)
+    surf.blit(blurSurf(sub,5),(130,0)) # Remplace la surface actuelle par une surface floutée
+    pygame.draw.line(surf, (36, 36, 36), (130, 0), (130, 750))
+    pygame.draw.line(surf, (36, 36, 36), (620, 0), (620, 750))
+    run=True
+    while run:
+        if run:
+            replay_img = pygame.image.load("./images/New_game_Button.png").convert_alpha()
+            replay_button = button.Button(258, 400, replay_img, 0.4)
+            menu_img = pygame.image.load("./images/Menu_Button.png").convert_alpha()
+            menu_button = button.Button(258, 500, menu_img, 0.4)
+            if gagnant=="Personne":
+                image_texte1 = police.render ("Aucun", 1 , (222, 109, 44))
+                image_texte2 = police.render ("gagnant", 1 , (222, 109, 44))
+                surf.blit(image_texte1, (225,125))
+                surf.blit(image_texte2, (170,208))
+
+            else:
+                image_texte1 = police.render ("Victoire", 1 , (42, 201, 71))
+                image_texte2 = police.render ("du", 1 , (42, 201, 71))
+                image_texte3 = police.render (gagnant, 1, (42, 201, 71))
+                surf.blit(image_texte1, (135,100))
+                surf.blit(image_texte2, (325,183))
+                if gagnant=="Robot":
+                    surf.blit(image_texte3, (225,266))
+                else:
+                    surf.blit(image_texte3, (135,266)) 
+            pygame.display.flip()
+
+            
+            
+            if replay_button.draw(surf):  # Un appui sur le bouton replay (affiché à l'écran) relance une partie
+                surf.fill((255,255,255))
+                partie(dif) # Relance une partie
+            
+            
+            
+            for event in pygame.event.get(): 
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN: # Un appui sur la touche "Entrée" relance une partie
+                        surf.fill((255,255,255))
+                        partie(dif)
+                if event.type==pygame.QUIT:
+                    run = False
+                    exit()
+            
+            if menu_button.draw(surf):
+                run = False
+                sleep(0.2)
+                menu.main_menu()
+                
+                
+
+    return run 
+class Menu():
+    def __init__(self, niveau=0):
+        self.niveau = niveau
+    def main_menu(self):  
+        pygame.display.set_caption("Main Menu") 
+        run = True
+        # load text
+        titre_txt = police.render ("Morpion", 1 , (0))
+        # load button images
+        play_img = pygame.image.load("./images/Play_Button.png").convert_alpha()
+        options_img = pygame.image.load("./images/Options_Button.png").convert_alpha()
+        credits_img = pygame.image.load("./images/bouton_credits.png").convert_alpha()
+        # creation des boutons
+        play_button = button.Button(258, 275, play_img, 0.4)
+        options_button = button.Button(258, 400, options_img, 0.4)
+        credits_button = button.Button(258, 525, credits_img, 0.4)
+        while run:
+            surf.fill((112, 112, 112))
+            surf.blit(titre_txt, (165,80))
+            for event in pygame.event.get():
+                if event.type==pygame.QUIT:
+                    run = False
+                    exit()
+            if play_button.draw(surf):  # Un appui sur le bouton replay (affiché à l'écran) relance une partie
+                surf.fill((255,255,255))
+                partie(self.niveau) 
+            if options_button.draw(surf):
+                run = False
+                menu.options()
+            if credits_button.draw(surf):
+                run = False
+                menu.credits()
+            pygame.display.flip()
+    def options(self):
+        pygame.display.set_caption("Options") 
+        run = True
+        # load text
+        titre_txt = police.render ("Difficulté", 1 , (0))
+        joueur_txt = police2.render ("joueur", 1 , (0))
+        contre_txt = police2.render ("VS", 1 , (250,0,0)) 
+        ia_txt = police2.render ("IA", 1 , (0))
+        simple_txt = police2.render ("simple", 1 , (50, 168, 82))
+        moyenne_txt = police2.render ("moyenne", 1 , (232, 155, 23))
+        difficile_txt = police2.render ("difficile", 1 , (250,0,0))
+        # load button images
+        dif0g_img = pygame.image.load("./images/dif0(grey).png").convert_alpha()
+        dif1g_img = pygame.image.load("./images/dif1(grey).png").convert_alpha()
+        dif2g_img = pygame.image.load("./images/dif2(grey).png").convert_alpha()
+        dif3g_img = pygame.image.load("./images/dif3(grey).png").convert_alpha()
+        actif_img = pygame.image.load("./images/dif_actif.png").convert_alpha()
+        back_img = pygame.image.load("./images/Back_Button.png").convert_alpha()
+        # creation des boutons
+        dif0_button = button.Button(100, 200, dif0g_img, 0.4)
+        dif1_button = button.Button(260, 200, dif1g_img, 0.4)
+        dif2_button = button.Button(420, 200, dif2g_img, 0.4)
+        dif3_button = button.Button(580, 200, dif3g_img, 0.4)
+        back_button = button.Button(258, 600, back_img, 0.4)
+        # liste des boutons
+        l_button = [(dif0_button,0),(dif1_button,1),(dif2_button,2),(dif3_button,3)]
+        while run:
+            surf.fill((112, 112, 112))
+            # affiche le texte
+            surf.blit(titre_txt, (75,50))
+            surf.blit(joueur_txt, (85,300)) # 0
+            surf.blit(joueur_txt, (245,300)) # 1
+            surf.blit(joueur_txt, (405,300)) # 2
+            surf.blit(joueur_txt, (570,300)) # 3
+            surf.blit(contre_txt, (115,330)) # 0
+            surf.blit(contre_txt, (275,330)) # 1
+            surf.blit(contre_txt, (435,330)) # 2
+            surf.blit(contre_txt, (600,330)) # 3
+            surf.blit(joueur_txt, (85,360)) # 0
+            surf.blit(ia_txt, (275,360)) # 1
+            surf.blit(ia_txt, (435,360)) # 2
+            surf.blit(ia_txt, (600,360)) # 3
+            surf.blit(simple_txt, (245,390)) # 1
+            surf.blit(moyenne_txt, (395,390)) # 2
+            surf.blit(difficile_txt, (545,390)) # 3
+
+            if self.niveau == 0:
+                l = list(l_button)
+                l.pop(0) # retire le bouton actif de la liste des boutons
+                for element in l: # affiche les 3 autres boutons et gère le click
+                    if element[0].draw(surf):
+                        self.niveau = element[1]
+                actif_button= button.Button(100, 200, actif_img, 0.4) 
+                actif_button.draw(surf) # affiche bouton actif
+            
+            if self.niveau == 1:
+                l = list(l_button)
+                l.pop(1) # retire le bouton actif de la liste des boutons
+                for element in l: # affiche les 3 autres boutons et gère le click
+                    if element[0].draw(surf):
+                        self.niveau = element[1]
+                actif_button= button.Button(260, 200, actif_img, 0.4)
+                actif_button.draw(surf) # affiche bouton actif
+
+            if self.niveau == 2:
+                l = list(l_button)
+                l.pop(2) # retire le bouton actif de la liste des boutons
+                for element in l: # affiche les 3 autres boutons et gère le click
+                    if element[0].draw(surf):
+                        self.niveau = element[1]
+                actif_button= button.Button(420, 200, actif_img, 0.4)
+                actif_button.draw(surf) # affiche bouton actif
+        
+            if self.niveau == 3: 
+                l = list(l_button)
+                l.pop(3) # retire le bouton actif de la liste des boutons
+                for element in l: # affiche les 3 autres boutons et gère le click
+                    if element[0].draw(surf):
+                        self.niveau = element[1]
+                actif_button= button.Button(580, 200, actif_img, 0.4)
+                actif_button.draw(surf) # affiche bouton actif
+            
+            if back_button.draw(surf):
+                run = False
+                menu.main_menu()
+            
+            for event in pygame.event.get():
+                if event.type==pygame.QUIT:
+                    run = False
+                    exit()   
+            pygame.display.flip()
+    
+    def credits(self):
+        pygame.display.set_caption("Crédits")
+        run = True
+        # load button img
+        back_img = pygame.image.load("./images/Back_Button.png").convert_alpha()
+        # création du bouton
+        back_button = button.Button(258, 600, back_img, 0.4)
+        # load text
+        titre_txt = police.render ("Crédits", 1 , (0))
+        realise_txt = police3.render("Réalisé par :", 1, (0))
+        raphael_txt  = police3.render("Raphaël FISCHER", 1, (50, 168, 82))
+        dorian_txt  = police3.render("Dorian COURCELLE", 1, (50, 168, 82))
+        while run:
+            surf.fill((112, 112, 112))
+            surf.blit(titre_txt, (165,80))
+            surf.blit(realise_txt, (180,220))
+            surf.blit(raphael_txt, (150,290))
+            surf.blit(dorian_txt, (140,360))
+            for event in pygame.event.get():
+                if event.type==pygame.QUIT:
+                    run = False
+                    exit()
+            if back_button.draw(surf):
+                run = False
+                menu.main_menu()
+            
+            pygame.display.flip()
+menu = Menu() # Niveau de difficulté
+menu.main_menu()
