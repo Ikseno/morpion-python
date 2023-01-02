@@ -65,12 +65,12 @@ Dans les cases, les 0 représentent des cases vides, les 1 représentent des X e
         
         # Bandes horizontales
         if self.ligne_gagnante(joueur,x):
-            pygame.draw.line(surf, (250, 70, 70), (10, 125*(x+1) + 125*x), (740, 125*(x+1) + 125*x), 10)
+            pygame.draw.line(surf, (250, 70, 70), (10, 125*(x+1) + 125*x), (740, 125*(x+1) + 125*x), 7)
             return True
             
         # Bandes verticales  
         if self.colonne_gagnante(joueur,y):
-            pygame.draw.line(surf, (250, 70, 70), (125*(y+1) + 125*y, 10), (125*(y+1) + 125*y, 740), 10)
+            pygame.draw.line(surf, (250, 70, 70), (125*(y+1) + 125*y, 10), (125*(y+1) + 125*y, 740), 6)
             return True
 
         # Bande diagonale en partant de la gauche
