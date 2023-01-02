@@ -17,11 +17,6 @@ police2 = pygame.font.SysFont("monospace" ,30)
 police3 = pygame.font.SysFont("monospace" , 50)
 
 
-my_text = police2.render ("joueur", 1 , (0))
-text_width = my_text.get_width()
-text_height = my_text.get_height()
-print(text_height, text_width)
-
 class Grille:
     """Grille 3x3 de morpion sous forme de liste de liste basée sur un système de coordonnée comme ceci :
 [[00,01,02],
