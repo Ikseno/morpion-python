@@ -6,4 +6,4 @@ Consigne --> Création d'un morpion avec la bibliothèque pygame
 
 Statut : terminé
 
-Réalisé par : Raphaël et Dorian Courcelle
+Réalisé par : Raphaël et Dorian
