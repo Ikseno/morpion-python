@@ -8,7 +8,13 @@ C'est un jeu de morpion réalisé avec la bibliothèque PyGame. Celui comprend 4
 ## Images du jeu
 
 Menu: <br />
+![](http://i.imgur.com/a9RLkgB.png?1)
+
+Options: <br />
 ![](http://i.imgur.com/JNnLceL.png?1)
+
+Partie: <br />
+![](http://i.imgur.com/PXutkNS.png?1)
 
 ## Installation
 
