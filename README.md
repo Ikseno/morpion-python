@@ -2,7 +2,7 @@
 
 ## Description
 
-Mini-projet réalisé dans le cadre du cours de NSI en terminale.
+Mini-projet réalisé dans le cadre du cours de NSI en terminale. <br />
 C'est un jeu de morpion réalisé avec la bibliothèque PyGame. Celui comprend 4 modes différents : 1vs1 et 3 difficultés d'IA différentes.
 
 ## Images du jeu
